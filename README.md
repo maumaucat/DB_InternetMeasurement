@@ -10,7 +10,7 @@
 - [x] Durchschnittliche RSRQ
 - [ ] Median RSRQ
 
-- [ ] Durchschnittliche Latenz (alle pings)
+- [ ] Durchschnittliche Latenz (alle pings) (marlena on it)
 - [ ] Median Latenz (alle pings)
 
 - [ ] Durchschnittliche Latenz (nach Verbindungstyp) ??

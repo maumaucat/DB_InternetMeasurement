@@ -1,5 +1,6 @@
 from collections import Counter
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
 NETWORKTYPES = ['kein Netz', '2G', '3G', '4G', '5G']
@@ -50,6 +51,41 @@ def calculate_avg_value_per_geometry(grid, column):
     summary = grid.groupby('geometry')[column].mean().reset_index()
     return gpd.GeoDataFrame(summary, geometry='geometry', crs=grid.crs)
 
+def calculate_median_value_per_geometry(grid, column):
+    """Calculate the median value per geometry."""
+    if column not in grid.columns:
+        print(f"Column {column} not found in grid")
+        raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
+
+    # make sure column is numeric
+    grid[column] = pd.to_numeric(grid[column], errors='coerce')
+
+    summary = grid.groupby('geometry')[column].median().reset_index()
+    return gpd.GeoDataFrame(summary, geometry='geometry', crs=grid.crs)
+
+def calculate_median_value_per_geometry_multiple_columns(grid, columns):
+    """Calculate the median value per geometry for multiple columns."""
+    for column in columns:
+        if column not in grid.columns:
+            print(f"Column {column} not found in grid")
+            raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
+
+        # Gruppieren nach Geometrie und Listen sammeln
+    grouped = grid.groupby('geometry')[columns].agg(
+        lambda x: x.dropna().tolist()
+    ).reset_index()
+
+    # Alle Listen aus den Spalten zu einer großen Liste zusammenführen und Median berechnen
+    def safe_median(row):
+        all_values = [item for sublist in row.values if sublist for item in sublist]
+        return np.median(all_values) if all_values else np.nan
+
+    grouped['median'] = grouped.apply(safe_median, axis=1)
+
+    # In GeoDataFrame umwandeln (Geometrie ist der Index)
+    return gpd.GeoDataFrame(grouped, geometry=grouped.index, crs=grid.crs).reset_index()
+
+
 def calculate_avg_value_per_geometry_multiple_columns(grid, columns):
     """Calculate the average value per geometry for multiple columns."""
     for column in columns:
@@ -63,6 +99,4 @@ def calculate_avg_value_per_geometry_multiple_columns(grid, columns):
     summary = grid.groupby('geometry')[columns].mean().reset_index()
     # calculate mean over all columns
     summary['mean'] = summary[columns].mean(axis=1)
-    with open('mean_columns.txt', 'w') as f:
-        f.write(summary.head().to_string())
     return gpd.GeoDataFrame(summary, geometry='geometry', crs=grid.crs)
