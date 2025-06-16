@@ -162,8 +162,75 @@ def plot_continuous_values(grids,
     plt.close(fig)
 
 
+def plot_continuous_values_per_Type(grids,
+                           column,
+                           bounds,
+                           map_source=cx.providers.OpenStreetMap.Mapnik,
+                           result_path=None,
+                           label="Number of Measurements",
+                           title="",
+                           plot=True,
+                           agg_func=count_rows_per_geometry,
+                           log_scale=False,
+                           types=NETWORKTYPES):
+    """Plot continuous values in a grid cell of a GeoDataFrame, grouped by Type."""
+    aggregated_per_operator = {}
+    for operator, grid in grids.items():
+        aggregated = agg_func(grid, column)
+        aggregated_per_operator[operator] = aggregated
 
-def load_network_availability_data(file_path):
+    vmin = min(aggregated[column].min() for aggregated in aggregated_per_operator.values())
+    vmax = max(aggregated[column].max() for aggregated in aggregated_per_operator.values())
+
+    # scale for all plots
+    if log_scale:
+        norm = mcolors.LogNorm(vmin=vmin, vmax=vmax)
+        ticks = np.logspace(np.log10(vmin), np.log10(vmax), num=15)
+        # round ticks to 0 decimal places
+        ticks = np.round(ticks, 0)
+    else:
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+        ticks = np.linspace(vmin, vmax, num=15)
+        ticks = np.round(ticks, 0)
+
+    fig, axes = plt.subplots(len(grids), len(types), figsize=(16*len(types), len(grids)*6), sharex=True)
+    fig.suptitle(title, fontsize=20)
+    for i in range(len(types)):
+        axes[0][i].set_title(types[i], fontsize=20)
+    for i, (operator, aggregated) in enumerate(aggregated_per_operator.items()):
+        for j, network_type in enumerate(types):
+            # Filter the aggregated data for the current network type
+            filtered_aggregated = aggregated[aggregated['Typ'] == network_type]
+            if filtered_aggregated.empty:
+                raise ValueError(f"No data found for operator {operator} and network type {network_type}. Please check your data.")
+
+            filtered_aggregated.plot(column=column, cmap='viridis', legend=False, ax=axes[i][j], norm=norm)
+            axes[i][j].set_ylim(bounds[1], bounds[3])
+            axes[i][j].set_xlim(bounds[0], bounds[2])
+            axes[i][j].set_axis_off()
+            cx.add_basemap(axes[i][j], crs=filtered_aggregated.crs, source=map_source)
+
+        axes[i][0].set_ylabel(f"{operator}", fontsize=20)
+        axes[i][0].set_axis_on()
+        axes[i][0].set_yticks([])  # remove y-numbers
+        axes[i][0].tick_params(axis='y', length=0)  # no ticks on y-axis
+
+    sm = plt.cm.ScalarMappable(cmap='viridis', norm=norm)
+    sm.set_array([])  # only needed for matplotlib < 3.6
+    cbar = fig.colorbar(sm, ax=axes, orientation='horizontal', fraction=0.08, pad=0.04, ticks=ticks)
+    cbar.set_ticklabels([f"{tick:.0f}" for tick in ticks])  # Format tick labels
+    cbar.ax.tick_params(labelsize=16)  # Set colorbar tick label size
+    cbar.set_label(label, fontsize=20)
+
+    # Show the plot
+    if result_path:
+        plt.savefig(result_path, dpi=500)
+    if plot:
+        plt.show()
+
+
+
+def load_network_availability_data():
     """Load network availability data from a CSV file."""
     network_availability = {}
 
@@ -186,7 +253,7 @@ def load_network_availability_data(file_path):
             print(f"No data found for operator {operator}")
     return network_availability
 
-def load_network_latency_data(file_path):
+def load_network_latency_data():
     """Load network latency data from a CSV file."""
     network_latency = {}
     for operator in OPERATORS:
@@ -212,9 +279,9 @@ def calculate_bounds(gdfs):
     max_y = max(b[3] for b in bounds)
     return min_x, min_y, max_x, max_y
 
-def test():
-    network_availability = load_network_availability_data(DATAROOT)
-    network_latency = load_network_latency_data(DATAROOT)
+def main():
+    network_availability = load_network_availability_data()
+    network_latency = load_network_latency_data()
     bounds = calculate_bounds(list(network_availability.values()) + list(network_latency.values()))
 
     grids_availability = {}
@@ -247,9 +314,11 @@ def test():
     # plot the percentage of empty pings in each grid cell
     #plot_continuous_values(grids_latency, 'percentage_empty', bounds, columns=PINGS, title="Percentage of Empty Pings in Grid Cells", agg_func=percentage_of_empty_per_geometry, label="Percentage of Empty Pings", log_scale=False)
     # plot the provider
-    plot_categorical_values(grids_availability, bounds, column='Netzwerk Anbieter', title="Network Provider", agg_func=calculate_all_per_geometry, one_legend=False)
+    # plot_categorical_values(grids_availability, bounds, column='Netzwerk Anbieter', title="Network Provider", agg_func=calculate_all_per_geometry, one_legend=False)
+    # plot the latency per connection type
+    plot_continuous_values_per_Type(grids_availability, 'Signalstärke (RSSI) [dBm]', bounds, title="Average RSSI per Connection Type in Grid Cells", agg_func=calculate_avg_value_per_networktype, label="RSSI [dBm]", log_scale=False, types=['4G', '5G'])
+
 if __name__ == "__main__":
-    #main()
-    test()
+    main()
 
 ...

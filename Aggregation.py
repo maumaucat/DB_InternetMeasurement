@@ -24,7 +24,6 @@ def calculate_all_per_geometry(grid, column):
 
     return gpd.GeoDataFrame(grouped, geometry='geometry', crs=grid.crs)
 
-
 def calculate_worst_network_per_geometry(grid, column):
     """Calculate the worst value per geometry."""
     if column not in grid.columns:
@@ -94,7 +93,6 @@ def calculate_median_value_per_geometry_multiple_columns(grid, columns):
     summary = gpd.GeoDataFrame(grouped_median, geometry='geometry', crs=grid.crs)
     return summary
 
-
 def calculate_avg_value_per_geometry_multiple_columns(grid, columns):
     """Calculate the average value per geometry for multiple columns."""
     for column in columns:
@@ -130,3 +128,17 @@ def percentage_of_empty_per_geometry(grid, columns):
 
     # convert to GeoDataFrame
     return gpd.GeoDataFrame(merged, geometry='geometry', crs=grid.crs)
+
+def calculate_avg_value_per_networktype(grid, column):
+    """Calculate the average value per network type."""
+    if column not in grid.columns:
+        print(f"Column {column} not found in grid")
+        raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
+
+    # make sure column is numeric
+    grid[column] = pd.to_numeric(grid[column], errors='coerce')
+
+    # group by network type and geometry, then calculate the mean
+    grouped = grid.groupby(['geometry', 'Typ'])[column].mean().reset_index()
+    return gpd.GeoDataFrame(grouped, geometry='geometry', crs=grid.crs)
+
