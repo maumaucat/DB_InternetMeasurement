@@ -292,6 +292,9 @@ def test():
     #plot_continuous_values(grids_latency, 'mean', bounds, columns=PINGS ,title="Average Latency in Grid Cells", agg_func=calculate_avg_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
     # plot the median latency to all pings in each grid cell
     #plot_continuous_values(grids_latency, 'median', bounds, columns=PINGS, title="Median Latency in Grid Cells", agg_func=calculate_median_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
+    # plot the percentage of empty pings in each grid cell
+    plot_continuous_values(grids_latency, 'percentage_empty', bounds, columns=PINGS, title="Percentage of Empty Pings in Grid Cells", agg_func=percentage_of_empty_per_geometry, label="Percentage of Empty Pings", log_scale=False)
+
 if __name__ == "__main__":
     #main()
     test()

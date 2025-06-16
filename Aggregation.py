@@ -85,9 +85,6 @@ def calculate_median_value_per_geometry_multiple_columns(grid, columns):
     return summary
 
 
-
-
-
 def calculate_avg_value_per_geometry_multiple_columns(grid, columns):
     """Calculate the average value per geometry for multiple columns."""
     for column in columns:
@@ -102,3 +99,24 @@ def calculate_avg_value_per_geometry_multiple_columns(grid, columns):
     # calculate mean over all columns
     summary['mean'] = summary[columns].mean(axis=1)
     return gpd.GeoDataFrame(summary, geometry='geometry', crs=grid.crs)
+
+def percentage_of_empty_per_geometry(grid, columns):
+    """Calculate the percentage of empty values per geometry."""
+    for column in columns:
+        if column not in grid.columns:
+            print(f"Column {column} not found in grid")
+            raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
+
+    # get the pings that are an empty
+    empty_pings = grid[columns].isna().all(axis=1)
+
+    # count rows per geometry
+    num_empty_pings = grid[empty_pings].groupby('geometry').size().reset_index(name='empty_count')
+    num_total_pings = grid.groupby('geometry').size().reset_index(name='total_count')
+
+    # merge the two dataframes
+    merged = num_empty_pings.merge(num_total_pings, on='geometry', how='outer').fillna(0)
+    merged['percentage_empty'] = (merged['empty_count'] / merged['total_count']) * 100
+
+    # convert to GeoDataFrame
+    return gpd.GeoDataFrame(merged, geometry='geometry', crs=grid.crs)

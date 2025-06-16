@@ -16,8 +16,8 @@
 - [ ] Durchschnittliche Latenz (nach Verbindungstyp) ??
 - [ ] Median Latenz (nach Verbindungstyp) ??
 
-- [ ] Prozententualer Verbindungsausfall bei den Pings (curenty in work by @marlena)
+- [x] Prozententualer Verbindungsausfall bei den Pings
 
-- [ ] Anbieter
+- [ ] Anbieter 
 
 - [ ] Towers?
