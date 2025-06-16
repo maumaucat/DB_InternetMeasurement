@@ -4,19 +4,19 @@
 - [x] Häufigster Verbindungstyp
 - [x] Schlechtester Verbindungstyp
 - [x] Durchschnittliche RSSI
-- [ ] Median RSSI
+- [x] Median RSSI
 - [x] Durchschnittliche RSRP
-- [ ] Median RSRP
+- [x] Median RSRP
 - [x] Durchschnittliche RSRQ
-- [ ] Median RSRQ
+- [x] Median RSRQ
 
-- [ ] Durchschnittliche Latenz (alle pings) (marlena on it)
-- [ ] Median Latenz (alle pings)
+- [x] Durchschnittliche Latenz (alle pings)
+- [x] Median Latenz (alle pings)
 
 - [ ] Durchschnittliche Latenz (nach Verbindungstyp) ??
 - [ ] Median Latenz (nach Verbindungstyp) ??
 
-- [ ] Prozententualer Verbindungsausfall bei den Pings
+- [ ] Prozententualer Verbindungsausfall bei den Pings (curenty in work by @marlena)
 
 - [ ] Anbieter
 

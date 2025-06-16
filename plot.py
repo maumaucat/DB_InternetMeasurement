@@ -287,11 +287,11 @@ def test():
     #plot_continuous_values(grids_availability, "Signalstärke (RSRP) [dBm]", bounds, title="Average RSRP in Grid Cells", agg_func=calculate_avg_value_per_geometry, label="RSRP [dBm]")
     # plot the average RSRQ value in each grid cell
     #plot_continuous_values(grids_availability, "Signalqualität (RSRQ) [dBm]", bounds, title="Average RSRQ in Grid Cells", agg_func=calculate_avg_value_per_geometry, label="RSRQ [dBm]")
-
+    plot_continuous_values(grids_availability, "Signalqualität (RSRQ) [dBm]", bounds, title="Median SINR in Grid Cells", agg_func=calculate_median_value_per_geometry, label="RSRQ [dBm]")
     # plot the average latency to all pings in each grid cell
-    plot_continuous_values(grids_latency, 'mean', bounds, columns=PINGS ,title="Average Latency in Grid Cells", agg_func=calculate_avg_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
+    #plot_continuous_values(grids_latency, 'mean', bounds, columns=PINGS ,title="Average Latency in Grid Cells", agg_func=calculate_avg_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
     # plot the median latency to all pings in each grid cell
-    plot_continuous_values(grids_latency, 'median', bounds, columns=PINGS, title="Median Latency in Grid Cells", agg_func=calculate_median_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
+    #plot_continuous_values(grids_latency, 'median', bounds, columns=PINGS, title="Median Latency in Grid Cells", agg_func=calculate_median_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
 if __name__ == "__main__":
     #main()
     test()

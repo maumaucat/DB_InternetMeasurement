@@ -70,20 +70,22 @@ def calculate_median_value_per_geometry_multiple_columns(grid, columns):
             print(f"Column {column} not found in grid")
             raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
 
-        # Gruppieren nach Geometrie und Listen sammeln
-    grouped = grid.groupby('geometry')[columns].agg(
-        lambda x: x.dropna().tolist()
-    ).reset_index()
+    # make sure columns are numeric
+    grid[columns] = grid[columns].apply(pd.to_numeric, errors='coerce')
+    # create a new column that contains all values from the specified columns # and remove NaN values
+    grid['all_columns'] = grid[columns].apply(lambda x: [v for v in x if pd.notna(v)], axis=1)
+    # group by geometry and aggregate the lists of values
+    grouped = grid.groupby('geometry')['all_columns'].agg(lambda lists: [v for sublist in lists for v in sublist])
+    # calculate the median for each geometry
+    grouped_median = grouped.apply(lambda lst: np.median(lst) if lst else np.nan)
+    # convert the result back to a DataFrame
+    grouped_median = grouped_median.reset_index().rename(columns={'all_columns': 'median'})
+    # create a GeoDataFrame
+    summary = gpd.GeoDataFrame(grouped_median, geometry='geometry', crs=grid.crs)
+    return summary
 
-    # Alle Listen aus den Spalten zu einer großen Liste zusammenführen und Median berechnen
-    def safe_median(row):
-        all_values = [item for sublist in row.values if sublist for item in sublist]
-        return np.median(all_values) if all_values else np.nan
 
-    grouped['median'] = grouped.apply(safe_median, axis=1)
 
-    # In GeoDataFrame umwandeln (Geometrie ist der Index)
-    return gpd.GeoDataFrame(grouped, geometry=grouped.index, crs=grid.crs).reset_index()
 
 
 def calculate_avg_value_per_geometry_multiple_columns(grid, columns):
