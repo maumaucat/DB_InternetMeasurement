@@ -142,3 +142,33 @@ def calculate_avg_value_per_networktype(grid, column):
     grouped = grid.groupby(['geometry', 'Typ'])[column].mean().reset_index()
     return gpd.GeoDataFrame(grouped, geometry='geometry', crs=grid.crs)
 
+def calculate_percentage_overall(grid, column):
+    """Calculate the percentage of each value in a column."""
+    if column not in grid.columns:
+        print(f"Column {column} not found in grid")
+        raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
+
+    # count occurrences of each value
+    counts = grid[column].value_counts(normalize=True) * 100
+    counts = counts.reset_index()
+    counts.columns = [column, 'percentage']
+
+    return counts
+
+def calculate_average_latency_overall(grid, columns):
+    """Calculate the average latency overall."""
+    for column in columns:
+        if column not in grid.columns:
+            print(f"Column {column} not found in grid")
+            raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
+
+    # make sure columns are numeric
+    grid[columns] = grid[columns].apply(pd.to_numeric, errors='coerce')
+    # calculate the average latency for each column
+    avg_latency = grid[columns].mean().reset_index()
+    avg_latency.columns = ['column', 'average_latency']
+
+    with open('average_latency.txt', 'w') as f:
+        f.write(f'Average Latency: \n{avg_latency}\n')
+
+    return avg_latency

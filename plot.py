@@ -1,15 +1,10 @@
 from pathlib import Path
 
-import geopandas as gpd
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import shapely
 import matplotlib.patches as mpatches
 import contextily as cx
 import matplotlib.colors as mcolors
-from odc.geo.geobox import rotate
-
 from Aggregation import *
 
 DATAROOT = Path('data')
@@ -17,7 +12,7 @@ OPERATORS = ['Vodafone', 'Telekom', 'o2']
 TRANSLATIONS = { 'Typ' : 'Type'
                  ,'Netzwerk Anbieter' : 'Network Provider'}
 
-PINGS = ['ping_8.8.8.8', 'ping_1.1.1.1', 'ping_9.9.9.9', 'ping_google.com', 'ping_uni-osnabrueck.de', 'ping_utwente.nl']
+PINGS = ['ping_8.8.8.8', 'ping_1.1.1.1', 'ping_9.9.9.9', 'ping_google.com', 'ping_utwente.nl']
 
 
 def create_grid(gdf=None, bounds=None, n_cells=10, overlap=False, crs="EPSG:29902"):
@@ -229,6 +224,76 @@ def plot_continuous_values_per_Type(grids,
         plt.show()
 
 
+def plot_bars(grids,
+              column,
+              result_path=None,
+              ylabel="",
+              xlabel="",
+              title="",
+              plot=True,
+              agg_func=None):
+    """Plot bar charts for categorical values in a grid cell of a GeoDataFrame."""
+
+
+
+    aggregated_per_operator = {}
+    for operator, grid in grids.items():
+        aggregated = agg_func(grid, column)
+        aggregated_per_operator[operator] = aggregated
+
+    all_categories = set()
+    for aggregated in aggregated_per_operator.values():
+        all_categories.update(aggregated[column].unique())
+    all_categories = sorted(all_categories)
+
+    plot_df = pd.DataFrame(index=all_categories)
+
+    for operator, agg in aggregated_per_operator.items():
+        # Prozentwerte auf die Verbindungstypen abbilden, fehlende Werte mit 0 füllen
+        operator_series = agg.set_index('Typ')['percentage'].reindex(all_categories, fill_value=0)
+        plot_df[operator] = operator_series
+
+    # Plot
+    ax = plot_df.plot(kind='bar', figsize=(12, 7))
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    ax.set_title(title)
+    plt.xticks(rotation=0)
+
+    if result_path:
+        plt.savefig(result_path, dpi=500)
+    if plot:
+        plt.show()
+
+def plot_avg_latency_per_ping_bar(grids, ping_columns, ylabel="Average Latency [ms]", xlabel="Provider", title="", result_path=None, plot=True):
+    """Plot average latency per ping in a bar chart for each operator."""
+
+    plot_df = pd.DataFrame(index=grids.keys(), columns=ping_columns)
+
+    for operator, grid in grids.items():
+        for ping_col in ping_columns:
+            if ping_col in grid.columns:
+                avg_latency = grid[ping_col].mean()
+                plot_df.at[operator, ping_col] = avg_latency
+            else:
+                plot_df.at[operator, ping_col] = float('nan')
+
+    plot_df = plot_df.astype(float)
+
+    # transponieren
+    plot_df = plot_df.T
+
+    ax = plot_df.plot(kind='bar', figsize=(12, 7))
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    ax.set_title(title)
+    plt.xticks(rotation=0)
+    plt.legend(title="Provider")
+
+    if result_path:
+        plt.savefig(result_path, dpi=500)
+    if plot:
+        plt.show()
 
 def load_network_availability_data():
     """Load network availability data from a CSV file."""
@@ -316,8 +381,10 @@ def main():
     # plot the provider
     # plot_categorical_values(grids_availability, bounds, column='Netzwerk Anbieter', title="Network Provider", agg_func=calculate_all_per_geometry, one_legend=False)
     # plot the latency per connection type
-    plot_continuous_values_per_Type(grids_availability, 'Signalstärke (RSSI) [dBm]', bounds, title="Average RSSI per Connection Type in Grid Cells", agg_func=calculate_avg_value_per_networktype, label="RSSI [dBm]", log_scale=False, types=['4G', '5G'])
-
+    #plot_continuous_values_per_Type(grids_availability, 'Signalstärke (RSSI) [dBm]', bounds, title="Average RSSI per Connection Type in Grid Cells", agg_func=calculate_avg_value_per_networktype, label="RSSI [dBm]", log_scale=False, types=['4G', '5G'])
+    # plot the percentage of each value in the column
+    plot_bars(grids_availability, 'Typ', title="Percentage of Network Types", agg_func=calculate_percentage_overall, xlabel="Provider", ylabel="Percentage", plot=True)
+    plot_avg_latency_per_ping_bar(grids_latency, PINGS, title="Average Latency per Ping", xlabel="Provider", ylabel="Average Latency [ms]", plot=True)
 if __name__ == "__main__":
     main()
 

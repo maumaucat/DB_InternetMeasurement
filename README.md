@@ -1,4 +1,4 @@
-### Plots - Datenanalyse
+### Plots - Datenanalyse (Maps)
 
 - [x] Anzahl der Datenpunkte (Latenz / Verfügbarkeit)
 - [x] Häufigster Verbindungstyp
@@ -23,4 +23,7 @@
 
 - [x] Anbieter 
 
-- [ ] Towers? -> Schwer
+- [ ] Towers? -> Schwer API Key, begrenzt, teuer Was wollen wir dann darstellen überhaupt?
+
+### Plots - Datenanalyse (Bar Charts)
+- [x] Prozentuale Verteilung der Verbindungstypen
