@@ -14,7 +14,9 @@ from Aggregation import *
 
 DATAROOT = Path('data')
 OPERATORS = ['Vodafone', 'Telekom', 'o2']
-TRANSLATIONS = { 'Typ' : 'Type'}
+TRANSLATIONS = { 'Typ' : 'Type'
+                 ,'Netzwerk Anbieter' : 'Network Provider'}
+
 PINGS = ['ping_8.8.8.8', 'ping_1.1.1.1', 'ping_9.9.9.9', 'ping_google.com', 'ping_uni-osnabrueck.de', 'ping_utwente.nl']
 
 
@@ -47,7 +49,7 @@ def create_grid(gdf=None, bounds=None, n_cells=10, overlap=False, crs="EPSG:2990
         cells = cells.sjoin(gdf, how='inner')
     return cells
 
-def plot_categorical_values(grids, bounds, column, map_source=cx.providers.OpenStreetMap.Mapnik, result_path=None, title="", plot=True, agg_func=calculate_most_common_network_per_geometry):
+def plot_categorical_values(grids, bounds, column, map_source=cx.providers.OpenStreetMap.Mapnik, result_path=None, title="", plot=True, agg_func=calculate_most_common_network_per_geometry, one_legend=True):
     """Plot categorical values in a grid cell of a GeoDataFrame."""
 
     aggregated_per_operator = {}
@@ -67,6 +69,13 @@ def plot_categorical_values(grids, bounds, column, map_source=cx.providers.OpenS
     for i, (operator, aggregated_values) in enumerate(aggregated_per_operator.items()):
         aggregated_values['color'] = aggregated_values[column].map(cmap_dict)
         aggregated_values.plot(ax=axes[i], color=aggregated_values['color'])
+        if not one_legend:
+            # Echte, vorkommende Kategorien im Plot (ohne NaN)
+            present_vals = sorted(aggregated_values[column].dropna().unique())
+            # Patches nur für vorhandene Kategorien
+            patches = [mpatches.Patch(color=cmap_dict[val], label=str(val)) for val in present_vals]
+
+            axes[i].legend(handles=patches, title=TRANSLATIONS.get(column, column), fontsize=12, loc='upper right')
         axes[i].set_title(f"{operator}", fontsize=20)
         axes[i].set_ylim(bounds[1], bounds[3])
         axes[i].set_xlim(bounds[0], bounds[2])
@@ -74,10 +83,11 @@ def plot_categorical_values(grids, bounds, column, map_source=cx.providers.OpenS
         cx.add_basemap(axes[i], crs=aggregated_values.crs, source=map_source)
 
     # Create a legend for the colors
-    patches = [mpatches.Patch(color=cmap_dict[val], label=str(val)) for val in sorted(unique_values)]
-    fig.legend(handles=patches, title=TRANSLATIONS[column] if column in TRANSLATIONS else column, loc='center right', fontsize=20, title_fontsize=20)
-    # Adjust the layout
-    plt.tight_layout(rect=[0, 0, 0.83, 1])  # Leave space for the legend
+    if one_legend:
+        patches = [mpatches.Patch(color=cmap_dict[val], label=str(val)) for val in sorted(unique_values)]
+        fig.legend(handles=patches, title=TRANSLATIONS[column] if column in TRANSLATIONS else column, loc='center right', fontsize=20, title_fontsize=20)
+        # Adjust the layout
+        plt.tight_layout(rect=[0, 0, 0.83, 1])  # Leave space for the legend
 
     # Show the plot / save it
     if result_path:
@@ -151,65 +161,7 @@ def plot_continuous_values(grids,
         plt.show()
     plt.close(fig)
 
-def plot_no_pings(grid, column, map_source=cx.providers.OpenStreetMap.Mapnik, result_path=None, title="", scale_bounds=None):
-    """Plot the number of data points in each grid cell."""
-    cols = column if isinstance(column, list) else [column]
-    for col in cols:
-        if col in grid.columns:
-            grid[col] = pd.to_numeric(grid[col], errors='coerce')
-        else:
-            print(f"Column {col} not found in grid. Skipping.")
-    # get the pings that are an empty
-    empty_pings = grid[cols].isna().all(axis=1)
 
-    # count rows per geometry
-    num_empty_pings = grid[empty_pings].groupby('geometry').size().reset_index(name='empty_count')
-    # convert to GeoDataFrame
-    num_empty_pings = gpd.GeoDataFrame(num_empty_pings, geometry='geometry', crs=grid.crs)
-    # Plot the number of data points
-    ax = num_empty_pings.plot(column='empty_count', cmap='viridis', legend=True, figsize=(16, 9))
-    ax.set_title(title)
-    # Add basemap
-    cx.add_basemap(ax, crs=grid.crs, source=map_source)
-    # Show the plot
-    if result_path:
-        plt.savefig(result_path, dpi=500, bbox_inches='tight')
-    else:
-        plt.show()
-
-def plot_percentage_no_ping(grid, column, map_source=cx.providers.OpenStreetMap.Mapnik, result_path=None, title="", scale_bounds=None):
-    """Plot the percentage of empty pings in each grid cell."""
-    cols = column if isinstance(column, list) else [column]
-    for col in cols:
-        if col in grid.columns:
-            grid[col] = pd.to_numeric(grid[col], errors='coerce')
-        else:
-            print(f"Column {col} not found in grid. Skipping.")
-
-    # get the pings that are an empty
-    empty_pings = grid[cols].isna().all(axis=1)
-
-    # count rows per geometry
-    num_empty_pings = grid[empty_pings].groupby('geometry').size().reset_index(name='empty_count')
-    num_total_pings = grid.groupby('geometry').size().reset_index(name='total_count')
-
-    # merge the two dataframes
-    merged = num_empty_pings.merge(num_total_pings, on='geometry', how='outer').fillna(0)
-    merged['percentage_empty'] = (merged['empty_count'] / merged['total_count']) * 100
-
-    # convert to GeoDataFrame
-    merged = gpd.GeoDataFrame(merged, geometry='geometry', crs=grid.crs)
-
-    # Plot the percentage of empty pings
-    ax = merged.plot(column='percentage_empty', cmap='viridis', legend=True, figsize=(16, 9))
-    ax.set_title(title)
-    # Add basemap
-    cx.add_basemap(ax, crs=grid.crs, source=map_source)
-    # Show the plot
-    if result_path:
-        plt.savefig(result_path, dpi=500, bbox_inches='tight')
-    else:
-        plt.show()
 
 def load_network_availability_data(file_path):
     """Load network availability data from a CSV file."""
@@ -287,14 +239,15 @@ def test():
     #plot_continuous_values(grids_availability, "Signalstärke (RSRP) [dBm]", bounds, title="Average RSRP in Grid Cells", agg_func=calculate_avg_value_per_geometry, label="RSRP [dBm]")
     # plot the average RSRQ value in each grid cell
     #plot_continuous_values(grids_availability, "Signalqualität (RSRQ) [dBm]", bounds, title="Average RSRQ in Grid Cells", agg_func=calculate_avg_value_per_geometry, label="RSRQ [dBm]")
-    plot_continuous_values(grids_availability, "Signalqualität (RSRQ) [dBm]", bounds, title="Median SINR in Grid Cells", agg_func=calculate_median_value_per_geometry, label="RSRQ [dBm]")
+    #plot_continuous_values(grids_availability, "Signalqualität (RSRQ) [dBm]", bounds, title="Median SINR in Grid Cells", agg_func=calculate_median_value_per_geometry, label="RSRQ [dBm]")
     # plot the average latency to all pings in each grid cell
     #plot_continuous_values(grids_latency, 'mean', bounds, columns=PINGS ,title="Average Latency in Grid Cells", agg_func=calculate_avg_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
     # plot the median latency to all pings in each grid cell
     #plot_continuous_values(grids_latency, 'median', bounds, columns=PINGS, title="Median Latency in Grid Cells", agg_func=calculate_median_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
     # plot the percentage of empty pings in each grid cell
-    plot_continuous_values(grids_latency, 'percentage_empty', bounds, columns=PINGS, title="Percentage of Empty Pings in Grid Cells", agg_func=percentage_of_empty_per_geometry, label="Percentage of Empty Pings", log_scale=False)
-
+    #plot_continuous_values(grids_latency, 'percentage_empty', bounds, columns=PINGS, title="Percentage of Empty Pings in Grid Cells", agg_func=percentage_of_empty_per_geometry, label="Percentage of Empty Pings", log_scale=False)
+    # plot the provider
+    plot_categorical_values(grids_availability, bounds, column='Netzwerk Anbieter', title="Network Provider", agg_func=calculate_all_per_geometry, one_legend=False)
 if __name__ == "__main__":
     #main()
     test()

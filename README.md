@@ -18,6 +18,6 @@
 
 - [x] Prozententualer Verbindungsausfall bei den Pings
 
-- [ ] Anbieter 
+- [x] Anbieter 
 
 - [ ] Towers?

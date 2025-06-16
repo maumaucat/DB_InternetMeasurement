@@ -15,6 +15,16 @@ def calculate_most_common_network_per_geometry(grid, column):
     summary = grid.groupby('geometry')[column].agg(lambda x: Counter(x).most_common(1)[0][0]).apply(lambda x: NETWORKTYPES_TRANS[NETWORKTYPES.index(x)]).reset_index()
     return gpd.GeoDataFrame(summary, geometry='geometry', crs=grid.crs)
 
+def calculate_all_per_geometry(grid, column):
+    """Calculate all values per geometry."""
+    if column not in grid.columns:
+        print(f"Column {column} not found in grid")
+        raise ValueError(f"Column {column} not found in grid. Please provide a valid column name.")
+    grouped = grid.groupby('geometry')[column].agg(lambda x: ', '.join(sorted(set(str(v) for v in x if pd.notna(v))))).reset_index()
+
+    return gpd.GeoDataFrame(grouped, geometry='geometry', crs=grid.crs)
+
+
 def calculate_worst_network_per_geometry(grid, column):
     """Calculate the worst value per geometry."""
     if column not in grid.columns:
