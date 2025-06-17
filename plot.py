@@ -7,6 +7,7 @@ import contextily as cx
 import matplotlib.colors as mcolors
 from Aggregation import *
 
+PLOT = True
 DATAROOT = Path('data')
 OPERATORS = ['Vodafone', 'Telekom', 'o2']
 TRANSLATIONS = { 'Typ' : 'Type'
@@ -15,7 +16,11 @@ TRANSLATIONS = { 'Typ' : 'Type'
 PINGS = ['ping_8.8.8.8', 'ping_1.1.1.1', 'ping_9.9.9.9', 'ping_google.com', 'ping_utwente.nl']
 
 
-def create_grid(gdf=None, bounds=None, n_cells=10, overlap=False, crs="EPSG:29902"):
+def create_grid(gdf=None,
+                bounds=None,
+                cell_size_degree=0.01,
+                overlap=False,
+                crs="EPSG:29902"):
     """Create square grid that covers a geodataframe area
     or a fixed boundary with x-y coords
     returns: a GeoDataFrame of grid polygons
@@ -28,7 +33,7 @@ def create_grid(gdf=None, bounds=None, n_cells=10, overlap=False, crs="EPSG:2990
         xmin, ymin, xmax, ymax= gdf.total_bounds
 
     # get cell size
-    cell_size = (xmax-xmin)/n_cells
+    cell_size = cell_size_degree #(xmax-xmin)/n_cells
     # create the cells in a loop
     grid_cells = []
     for x0 in np.arange(xmin, xmax+cell_size, cell_size ):
@@ -44,7 +49,15 @@ def create_grid(gdf=None, bounds=None, n_cells=10, overlap=False, crs="EPSG:2990
         cells = cells.sjoin(gdf, how='inner')
     return cells
 
-def plot_categorical_values(grids, bounds, column, map_source=cx.providers.OpenStreetMap.Mapnik, result_path=None, title="", plot=True, agg_func=calculate_most_common_network_per_geometry, one_legend=True):
+def plot_categorical_values(grids,
+                            bounds,
+                            column,
+                            map_source=cx.providers.OpenStreetMap.Mapnik,
+                            result_path=None,
+                            title="",
+                            plot=PLOT,
+                            agg_func=calculate_most_common_network_per_geometry,
+                            one_legend=True):
     """Plot categorical values in a grid cell of a GeoDataFrame."""
 
     aggregated_per_operator = {}
@@ -100,7 +113,7 @@ def plot_continuous_values(grids,
                            result_path=None,
                            label="Number of Measurements",
                            title="",
-                           plot=True,
+                           plot=PLOT,
                            agg_func=count_rows_per_geometry,
                            log_scale=False):
     """Plot continuous values in a grid cell of a GeoDataFrame."""
@@ -164,7 +177,7 @@ def plot_continuous_values_per_Type(grids,
                            result_path=None,
                            label="Number of Measurements",
                            title="",
-                           plot=True,
+                           plot=PLOT,
                            agg_func=count_rows_per_geometry,
                            log_scale=False,
                            types=NETWORKTYPES):
@@ -208,6 +221,8 @@ def plot_continuous_values_per_Type(grids,
         axes[i][0].set_ylabel(f"{operator}", fontsize=20)
         axes[i][0].set_axis_on()
         axes[i][0].set_yticks([])  # remove y-numbers
+        axes[i][0].set_xticks([])  # remove x-numbers
+        axes[i][0].tick_params(axis='x', length=0)  # no ticks on x-axis
         axes[i][0].tick_params(axis='y', length=0)  # no ticks on y-axis
 
     sm = plt.cm.ScalarMappable(cmap='viridis', norm=norm)
@@ -230,12 +245,9 @@ def plot_bars(grids,
               ylabel="",
               xlabel="",
               title="",
-              plot=True,
+              plot=PLOT,
               agg_func=None):
     """Plot bar charts for categorical values in a grid cell of a GeoDataFrame."""
-
-
-
     aggregated_per_operator = {}
     for operator, grid in grids.items():
         aggregated = agg_func(grid, column)
@@ -264,8 +276,15 @@ def plot_bars(grids,
         plt.savefig(result_path, dpi=500)
     if plot:
         plt.show()
+    plt.close()
 
-def plot_avg_latency_per_ping_bar(grids, ping_columns, ylabel="Average Latency [ms]", xlabel="Provider", title="", result_path=None, plot=True):
+def plot_avg_latency_per_ping_bar(grids,
+                                  ping_columns,
+                                  ylabel="Average Latency [ms]",
+                                  xlabel="Provider",
+                                  title="",
+                                  result_path=None,
+                                  plot=PLOT):
     """Plot average latency per ping in a bar chart for each operator."""
 
     plot_df = pd.DataFrame(index=grids.keys(), columns=ping_columns)
@@ -294,6 +313,7 @@ def plot_avg_latency_per_ping_bar(grids, ping_columns, ylabel="Average Latency [
         plt.savefig(result_path, dpi=500)
     if plot:
         plt.show()
+    plt.close()
 
 def load_network_availability_data():
     """Load network availability data from a CSV file."""
@@ -338,10 +358,10 @@ def load_network_latency_data():
 def calculate_bounds(gdfs):
     """Calculate the maximum bounds from a list of GeoDataFrames."""
     bounds = [gdf.total_bounds for gdf in gdfs]
-    min_x = min(b[0] for b in bounds)
-    min_y = min(b[1] for b in bounds)
-    max_x = max(b[2] for b in bounds)
-    max_y = max(b[3] for b in bounds)
+    min_x = min(b[0] for b in bounds) - 0.01  # add a small margin
+    min_y = min(b[1] for b in bounds) - 0.01  # add a small margin
+    max_x = max(b[2] for b in bounds) + 0.01  # add a small margin
+    max_y = max(b[3] for b in bounds) + 0.01  # add a small margin
     return min_x, min_y, max_x, max_y
 
 def main():
@@ -352,39 +372,180 @@ def main():
     grids_availability = {}
     grids_latency = {}
     for operator, gdf in network_availability.items():
-        grid = create_grid(gdf=gdf, n_cells=200, overlap=True, crs=gdf.crs, bounds=bounds)
+        grid = create_grid(gdf=gdf, cell_size_degree=0.01, overlap=True, crs=gdf.crs, bounds=bounds)
         grids_availability[operator] = grid
     for operator, gdf in network_latency.items():
-        grid = create_grid(gdf=gdf, n_cells=200, overlap=True, crs=gdf.crs, bounds=bounds)
+        grid = create_grid(gdf=gdf, cell_size_degree=0.01, overlap=True, crs=gdf.crs, bounds=bounds)
         grids_latency[operator] = grid
 
+
+    """ NUMBER OF DATA POINTS """
     # Plot the number of data points in each grid cell
-    #plot_continuous_values(grids_availability, "Messpunkt", bounds, title="Number of Data Points in Grid Cells (Availability)", agg_func=count_rows_per_geometry)
-    #plot_continuous_values(grids_latency, "timestamp", bounds, title="Number of Data Points in Grid Cells (Latency)", agg_func=count_rows_per_geometry)
+    plot_continuous_values(grids_availability,
+                           "Messpunkt",
+                           bounds,
+                           title="Number of Data Points in Grid Cells (Availability)",
+                           agg_func=count_rows_per_geometry,
+                           result_path="plots/numdatapoints/availability_data_points.png")
+    plot_continuous_values(grids_latency,
+                           "timestamp",
+                           bounds,
+                           title="Number of Data Points in Grid Cells (Latency)",
+                           agg_func=count_rows_per_geometry,
+                           result_path="plots/numdatapoints/latency_data_points.png")
+    """ NETWORK TYPES """
     # Plot the most common network availability value in each grid cell
-    #plot_categorical_values(grids_availability, bounds, column='Typ', title="Most Common Network Type in Grid Cells", agg_func=calculate_most_common_network_per_geometry)
+    plot_categorical_values(grids_availability,
+                            bounds,
+                            column='Typ',
+                            title="Most Common Network Type in Grid Cells",
+                            agg_func=calculate_most_common_network_per_geometry,
+                            result_path="plots/networktype/most_common_network_type.png")
     # plot the worst network availability value in each grid cell
-    #plot_categorical_values(grids_availability, bounds, column='Typ', title="Most Common Network Type in Grid Cells", agg_func=calculate_worst_network_per_geometry)
+    plot_categorical_values(grids_availability,
+                            bounds,
+                            column='Typ',
+                            title="Worst Network Type in Grid Cells",
+                            agg_func=calculate_worst_network_per_geometry,
+                            result_path="plots/networktype/worst_network_type.png")
+
+    # plot the percentage of each network type overall
+    plot_bars(grids_availability,
+              'Typ',
+              title="Percentage of Network Types overall",
+              agg_func=calculate_percentage_overall,
+              xlabel="Provider",
+              ylabel="Percentage",
+              result_path="plots/networktype/percentage_network_types.png")
+
+    """ SIGNAL STRENGTH """
     # plot the average RSSI value in each grid cell
-    #plot_continuous_values(grids_availability, "Signalstärke (RSSI) [dBm]", bounds, title="Average RSSI in Grid Cells", agg_func=calculate_avg_value_per_geometry, label="RSSI [dBm]")
+    plot_continuous_values(grids_availability,
+                           "Signalstärke (RSSI) [dBm]",
+                           bounds,
+                           title="Average RSSI in Grid Cells",
+                           agg_func=calculate_avg_value_per_geometry,
+                           label="RSSI [dBm]",
+                           result_path="plots/signal_strength/average_rssi.png")
     # plot the average RSRP value in each grid cell
-    #plot_continuous_values(grids_availability, "Signalstärke (RSRP) [dBm]", bounds, title="Average RSRP in Grid Cells", agg_func=calculate_avg_value_per_geometry, label="RSRP [dBm]")
+    plot_continuous_values(grids_availability,
+                           "Signalstärke (RSRP) [dBm]",
+                           bounds,
+                           title="Average RSRP in Grid Cells",
+                           agg_func=calculate_avg_value_per_geometry,
+                           label="RSRP [dBm]",
+                           result_path="plots/signal_strength/average_rsrp.png")
     # plot the average RSRQ value in each grid cell
-    #plot_continuous_values(grids_availability, "Signalqualität (RSRQ) [dBm]", bounds, title="Average RSRQ in Grid Cells", agg_func=calculate_avg_value_per_geometry, label="RSRQ [dBm]")
-    #plot_continuous_values(grids_availability, "Signalqualität (RSRQ) [dBm]", bounds, title="Median SINR in Grid Cells", agg_func=calculate_median_value_per_geometry, label="RSRQ [dBm]")
+    plot_continuous_values(grids_availability,
+                           "Signalqualität (RSRQ) [dBm]",
+                           bounds,
+                           title="Average RSRQ in Grid Cells",
+                           agg_func=calculate_avg_value_per_geometry,
+                           label="RSRQ [dBm]",
+                           result_path="plots/signal_quality/average_rsrq.png")
+    # plot the average RSSI value per connection type in each grid cell
+    plot_continuous_values_per_Type(grids_availability,
+                                    'Signalstärke (RSSI) [dBm]',
+                                    bounds,
+                                    title="Average RSSI per Connection Type in Grid Cells",
+                                    agg_func=calculate_avg_value_per_networktype,
+                                    label="RSSI [dBm]",
+                                    types=['4G', '5G'],
+                                    result_path="plots/signal_strength/average_rssi_per_type.png")
+    # plot the average RSRP value per connection type in each grid cell
+    plot_continuous_values_per_Type(grids_availability,
+                                    'Signalstärke (RSRP) [dBm]',
+                                    bounds,
+                                    title="Average RSRP per Connection Type in Grid Cells",
+                                    agg_func=calculate_avg_value_per_networktype,
+                                    label="RSRP [dBm]",
+                                    types=['4G', '5G'],
+                                    result_path="plots/signal_strength/average_rsrp_per_type.png")
+
+    # plot the average RSRQ value per connection type in each grid cell
+    plot_continuous_values_per_Type(grids_availability,
+                                    'Signalqualität (RSRQ) [dBm]',
+                                    bounds,
+                                    title="Average RSRQ per Connection Type in Grid Cells",
+                                    agg_func=calculate_avg_value_per_networktype,
+                                    label="RSRQ [dBm]",
+                                    types=['4G', '5G'],
+                                    result_path="plots/signal_quality/average_rsrq_per_type.png")
+
+    # plot the median RSSI value in each grid cell
+    plot_continuous_values(grids_availability,
+                            "Signalstärke (RSSI) [dBm]",
+                            bounds,
+                            title="Median RSSI in Grid Cells",
+                            agg_func=calculate_median_value_per_geometry,
+                            label="RSSI [dBm]",
+                            result_path="plots/signal_strength/median_rssi.png")
+    # plot the median RSRP value in each grid cell
+    plot_continuous_values(grids_availability,
+                            "Signalstärke (RSRP) [dBm]",
+                            bounds,
+                            title="Median RSRP in Grid Cells",
+                            agg_func=calculate_median_value_per_geometry,
+                            label="RSRP [dBm]",
+                            result_path="plots/signal_strength/median_rsrp.png")
+    # plot the median RSRQ value in each grid cell
+    plot_continuous_values(grids_availability,
+                            "Signalqualität (RSRQ) [dBm]",
+                            bounds,
+                            title="Median RSRQ in Grid Cells",
+                            agg_func=calculate_median_value_per_geometry,
+                            label="RSRQ [dBm]",
+                            result_path="plots/signal_quality/median_rsrq.png")
+
+
+    """LATENCY"""
     # plot the average latency to all pings in each grid cell
-    #plot_continuous_values(grids_latency, 'mean', bounds, columns=PINGS ,title="Average Latency in Grid Cells", agg_func=calculate_avg_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
+    plot_continuous_values(grids_latency,
+                           'mean',
+                           bounds,
+                           columns=PINGS,
+                           title="Average Latency in Grid Cells",
+                           agg_func=calculate_avg_value_per_geometry_multiple_columns,
+                           label="Latency [ms]",
+                           log_scale=True,
+                           result_path="plots/latency/average_latency.png")
     # plot the median latency to all pings in each grid cell
-    #plot_continuous_values(grids_latency, 'median', bounds, columns=PINGS, title="Median Latency in Grid Cells", agg_func=calculate_median_value_per_geometry_multiple_columns, label="Latency [ms]", log_scale=True)
+    plot_continuous_values(grids_latency,
+                           'median',
+                           bounds,
+                           columns=PINGS,
+                           title="Median Latency in Grid Cells",
+                           agg_func=calculate_median_value_per_geometry_multiple_columns,
+                           label="Latency [ms]",
+                           log_scale=True,
+                           result_path="plots/latency/median_latency.png")
     # plot the percentage of empty pings in each grid cell
-    #plot_continuous_values(grids_latency, 'percentage_empty', bounds, columns=PINGS, title="Percentage of Empty Pings in Grid Cells", agg_func=percentage_of_empty_per_geometry, label="Percentage of Empty Pings", log_scale=False)
+    plot_continuous_values(grids_latency,
+                           'percentage_empty',
+                           bounds,
+                           columns=PINGS,
+                           title="Percentage of Empty Pings in Grid Cells",
+                           agg_func=percentage_of_empty_per_geometry,
+                           label="Percentage of Empty Pings",
+                           result_path="plots/latency/percentage_empty_pings.png")
+    # plot the average latency per ping in a bar chart
+    plot_avg_latency_per_ping_bar(grids_latency,
+                                  PINGS,
+                                  title="Average Latency per Ping",
+                                  xlabel="Provider",
+                                  ylabel="Average Latency [ms]",
+                                  result_path="plots/latency/average_latency_per_ping.png")
+
+    """ NETWORK PROVIDER """
     # plot the provider
-    # plot_categorical_values(grids_availability, bounds, column='Netzwerk Anbieter', title="Network Provider", agg_func=calculate_all_per_geometry, one_legend=False)
-    # plot the latency per connection type
-    #plot_continuous_values_per_Type(grids_availability, 'Signalstärke (RSSI) [dBm]', bounds, title="Average RSSI per Connection Type in Grid Cells", agg_func=calculate_avg_value_per_networktype, label="RSSI [dBm]", log_scale=False, types=['4G', '5G'])
-    # plot the percentage of each value in the column
-    plot_bars(grids_availability, 'Typ', title="Percentage of Network Types", agg_func=calculate_percentage_overall, xlabel="Provider", ylabel="Percentage", plot=True)
-    plot_avg_latency_per_ping_bar(grids_latency, PINGS, title="Average Latency per Ping", xlabel="Provider", ylabel="Average Latency [ms]", plot=True)
+    plot_categorical_values(grids_availability,
+                            bounds,
+                            column='Netzwerk Anbieter',
+                            title="Network Provider",
+                            agg_func=calculate_all_per_geometry,
+                            one_legend=False,
+                            result_path="plots/network_provider/network_provider.png")
+
 if __name__ == "__main__":
     main()
 
