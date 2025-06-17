@@ -10,7 +10,7 @@ from matplotlib.colors import BoundaryNorm
 
 from Aggregation import *
 
-PLOT = True
+PLOT = False
 DATAROOT = Path('data')
 OPERATORS = ['Vodafone', 'Telekom', 'o2']
 TRANSLATIONS = { 'Typ' : 'Type'
@@ -391,8 +391,8 @@ def main():
 
 
     # Ensure plt.savefig does not throw errors for not existing parent folders by creating them
-    for dir in ["numdatapoints", "networktype", "signal_strength", "signal_quality"]:
-        Path(f"plots/{dir}").mkdir(parents=True)
+    for dir in ["numdatapoints", "networktype", "signal_strength", "signal_quality", "network_provider", "latency"]:
+        Path(f"plots/{dir}").mkdir(parents=True, exist_ok=True)
 
     """ NUMBER OF DATA POINTS """
     # Plot the number of data points in each grid cell
@@ -566,4 +566,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-...
