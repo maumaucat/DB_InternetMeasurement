@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -5,6 +6,8 @@ import shapely
 import matplotlib.patches as mpatches
 import contextily as cx
 import matplotlib.colors as mcolors
+from matplotlib.colors import BoundaryNorm
+
 from Aggregation import *
 
 PLOT = True
@@ -115,7 +118,8 @@ def plot_continuous_values(grids,
                            title="",
                            plot=PLOT,
                            agg_func=count_rows_per_geometry,
-                           log_scale=False):
+                           log_scale=False,
+                           scale_space=None,):
     """Plot continuous values in a grid cell of a GeoDataFrame."""
     aggregated_per_operator = {}
     for operator, grid in grids.items():
@@ -131,22 +135,29 @@ def plot_continuous_values(grids,
 
     vmin = min(aggregated[column].min() for aggregated in aggregated_per_operator.values())
     vmax = max(aggregated[column].max() for aggregated in aggregated_per_operator.values())
+
     # scale for all plots
-    if log_scale:
-        norm = mcolors.LogNorm(vmin=vmin, vmax=vmax)
-        ticks = np.logspace(np.log10(vmin), np.log10(vmax), num=15)
-        # round ticks to 0 decimal places
-        ticks = np.round(ticks, 0)
+    if scale_space is not None:
+        ticks = scale_space
+        cmap = plt.get_cmap('viridis', len(scale_space) -1)
+        norm = BoundaryNorm(boundaries=scale_space, ncolors=cmap.N)
     else:
-        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
-        ticks = np.linspace(vmin, vmax, num=15)
-        ticks = np.round(ticks, 0)
+        cmap = plt.get_cmap('viridis')
+        if log_scale:
+            norm = mcolors.LogNorm(vmin=vmin, vmax=vmax)
+            ticks = np.logspace(np.log10(vmin), np.log10(vmax), num=15)
+        else:
+            norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+            ticks = np.linspace(vmin, vmax, num=15)
+
+    ticks = np.round(ticks, 0)
 
     fig, axes = plt.subplots(len(grids), 1, figsize=(16, len(grids)*6), sharex=True)
     fig.suptitle(title, fontsize=20)
     for i, (operator, aggregated) in enumerate(aggregated_per_operator.items()):
+
         # Plot the number of data points
-        aggregated.plot(column=column, cmap='viridis', legend=False, ax=axes[i], norm=norm)
+        aggregated.plot(column=column, cmap=cmap, legend=False, ax=axes[i], norm=norm)
         axes[i].set_title(f"{operator}", fontsize=20)
         axes[i].set_ylim(bounds[1], bounds[3])  # Set y-limits to the bounds
         axes[i].set_xlim(bounds[0], bounds[2]) # Set x-limits to the bounds
@@ -154,7 +165,7 @@ def plot_continuous_values(grids,
         cx.add_basemap(axes[i], crs=aggregated.crs, source=map_source)
 
 
-    sm = plt.cm.ScalarMappable(cmap='viridis', norm=norm)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])  # only needed for matplotlib < 3.6
 
     cbar = fig.colorbar(sm, ax=axes, orientation='horizontal', fraction=0.08, pad=0.04, ticks=ticks)
@@ -386,13 +397,15 @@ def main():
                            bounds,
                            title="Number of Data Points in Grid Cells (Availability)",
                            agg_func=count_rows_per_geometry,
-                           result_path="plots/numdatapoints/availability_data_points.svg")
+                           result_path="plots/numdatapoints/availability_data_points.svg",
+                           scale_space=[0, 5, 10, 20, 30, 50, 100, 150, 200, 250])
     plot_continuous_values(grids_latency,
                            "timestamp",
                            bounds,
                            title="Number of Data Points in Grid Cells (Latency)",
                            agg_func=count_rows_per_geometry,
-                           result_path="plots/numdatapoints/latency_data_points.svg")
+                           result_path="plots/numdatapoints/latency_data_points.svg",
+                           scale_space=[0, 5, 10, 20, 30, 50, 100, 150, 200, 250])
     """ NETWORK TYPES """
     # Plot the most common network availability value in each grid cell
     plot_categorical_values(grids_availability,
