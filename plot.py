@@ -292,7 +292,7 @@ def plot_bars(grids,
 def plot_avg_latency_per_ping_bar(grids,
                                   ping_columns,
                                   ylabel="Average Latency [ms]",
-                                  xlabel="Provider",
+                                  xlabel="Address",
                                   title="",
                                   result_path=None,
                                   plot=PLOT):
@@ -313,12 +313,52 @@ def plot_avg_latency_per_ping_bar(grids,
     # transponieren
     plot_df = plot_df.T
 
-    ax = plot_df.plot(kind='bar', figsize=(12, 7))
+    ax = plot_df.plot(kind="bar", figsize=(12, 7))
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_title(title)
     plt.xticks(rotation=0)
     plt.legend(title="Provider")
+
+    if result_path:
+        plt.savefig(result_path, dpi=500)
+    if plot:
+        plt.show()
+    plt.close()
+
+def plot_latency_per_ping_box(grids,
+                                  ping_columns,
+                                  ylabel="Latency [ms]",
+                                  xlabel="Address",
+                                  title="",
+                                  result_path=None,
+                                  plot=PLOT):
+    """Plot latency per ping in a box chart for each operator."""
+    operators = grids.keys()
+
+    # Create subplots
+    fig, axs = plt.subplots(ncols=len(ping_columns), figsize=(12, 7), sharey=True)
+    ylim_max = 0
+    for i, col in enumerate(ping_columns):
+        # Extract ping column for each operator
+        ping_data = []
+        for op in operators:
+            op_grid = grids[op]
+            ping_data.append(op_grid[col].dropna())
+            ylim_max = max(ylim_max, op_grid[col].max())
+
+        # Create Boxplot for Host
+        axs[i].boxplot(ping_data, tick_labels=operators, flierprops={"marker": ".", "markersize": 1, "markeredgecolor": "xkcd:light gray"})
+        axs[i].set_yscale('symlog', linthresh=500)
+        axs[i].set_title(col.removeprefix("ping_"))
+
+        # Y Axis: Linear on low values and logarithmic for outliers
+        yticks = np.floor(np.concat((np.linspace(0, 400, 11), np.logspace(np.log10(500), np.log10(1000), 5))))
+        axs[i].set_yticks(yticks, labels=[f"{t:.0f}" for t in yticks])
+        axs[i].tick_params(labelrotation=20)
+
+    plt.xticks(rotation=20)
+    axs[0].set_ylabel(ylabel)
 
     if result_path:
         plt.savefig(result_path, dpi=500)
@@ -542,12 +582,19 @@ def main():
                            label="Percentage of Empty Pings",
                            result_path="plots/latency/percentage_empty_pings.svg")
     # plot the average latency per ping in a bar chart
-    plot_avg_latency_per_ping_bar(grids_latency,
+    # plot_avg_latency_per_ping_bar(grids_latency,
+    #                               PINGS,
+    #                               title="Average Latency per Ping",
+    #                               xlabel="Address",
+    #                               ylabel="Average Latency [ms]",
+    #                               result_path="plots/latency/average_latency_per_ping.svg")
+    # plot the average latency per ping in a bar chart
+    plot_latency_per_ping_box(grids_latency,
                                   PINGS,
-                                  title="Average Latency per Ping",
-                                  xlabel="Provider",
-                                  ylabel="Average Latency [ms]",
-                                  result_path="plots/latency/average_latency_per_ping.svg")
+                                  title="Latency per Ping",
+                                  xlabel="Address",
+                                  ylabel="Latency [ms]",
+                                  result_path="plots/latency/latency_per_ping_box.svg")
 
     """ NETWORK PROVIDER """
     # plot the provider
