@@ -390,6 +390,10 @@ def main():
         grids_latency[operator] = grid
 
 
+    # Ensure plt.savefig does not throw errors for not existing parent folders by creating them
+    for dir in ["numdatapoints", "networktype", "signal_strength", "signal_quality"]:
+        Path(f"plots/{dir}").mkdir(parents=True)
+
     """ NUMBER OF DATA POINTS """
     # Plot the number of data points in each grid cell
     plot_continuous_values(grids_availability,
