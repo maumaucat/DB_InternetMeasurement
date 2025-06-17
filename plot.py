@@ -79,7 +79,7 @@ def plot_categorical_values(grids,
 
     for i, (operator, aggregated_values) in enumerate(aggregated_per_operator.items()):
         aggregated_values['color'] = aggregated_values[column].map(cmap_dict)
-        aggregated_values.plot(ax=axes[i], color=aggregated_values['color'])
+        aggregated_values.plot(ax=axes[i], color=aggregated_values['color'], edgecolor='black')
         if not one_legend:
             # Echte, vorkommende Kategorien im Plot (ohne NaN)
             present_vals = sorted(aggregated_values[column].dropna().unique())
@@ -157,7 +157,7 @@ def plot_continuous_values(grids,
     for i, (operator, aggregated) in enumerate(aggregated_per_operator.items()):
 
         # Plot the number of data points
-        aggregated.plot(column=column, cmap=cmap, legend=False, ax=axes[i], norm=norm)
+        aggregated.plot(column=column, cmap=cmap, legend=False, ax=axes[i], norm=norm, edgecolor='black')
         axes[i].set_title(f"{operator}", fontsize=20)
         axes[i].set_ylim(bounds[1], bounds[3])  # Set y-limits to the bounds
         axes[i].set_xlim(bounds[0], bounds[2]) # Set x-limits to the bounds
@@ -223,7 +223,7 @@ def plot_continuous_values_per_Type(grids,
             if filtered_aggregated.empty:
                 raise ValueError(f"No data found for operator {operator} and network type {network_type}. Please check your data.")
 
-            filtered_aggregated.plot(column=column, cmap='viridis', legend=False, ax=axes[i][j], norm=norm)
+            filtered_aggregated.plot(column=column, cmap='viridis', legend=False, ax=axes[i][j], norm=norm, edgecolor='black')
             axes[i][j].set_ylim(bounds[1], bounds[3])
             axes[i][j].set_xlim(bounds[0], bounds[2])
             axes[i][j].set_axis_off()
@@ -561,5 +561,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-...
