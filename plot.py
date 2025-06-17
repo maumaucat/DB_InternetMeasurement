@@ -386,13 +386,13 @@ def main():
                            bounds,
                            title="Number of Data Points in Grid Cells (Availability)",
                            agg_func=count_rows_per_geometry,
-                           result_path="plots/numdatapoints/availability_data_points.png")
+                           result_path="plots/numdatapoints/availability_data_points.svg")
     plot_continuous_values(grids_latency,
                            "timestamp",
                            bounds,
                            title="Number of Data Points in Grid Cells (Latency)",
                            agg_func=count_rows_per_geometry,
-                           result_path="plots/numdatapoints/latency_data_points.png")
+                           result_path="plots/numdatapoints/latency_data_points.svg")
     """ NETWORK TYPES """
     # Plot the most common network availability value in each grid cell
     plot_categorical_values(grids_availability,
@@ -400,14 +400,14 @@ def main():
                             column='Typ',
                             title="Most Common Network Type in Grid Cells",
                             agg_func=calculate_most_common_network_per_geometry,
-                            result_path="plots/networktype/most_common_network_type.png")
+                            result_path="plots/networktype/most_common_network_type.svg")
     # plot the worst network availability value in each grid cell
     plot_categorical_values(grids_availability,
                             bounds,
                             column='Typ',
                             title="Worst Network Type in Grid Cells",
                             agg_func=calculate_worst_network_per_geometry,
-                            result_path="plots/networktype/worst_network_type.png")
+                            result_path="plots/networktype/worst_network_type.svg")
 
     # plot the percentage of each network type overall
     plot_bars(grids_availability,
@@ -416,7 +416,7 @@ def main():
               agg_func=calculate_percentage_overall,
               xlabel="Provider",
               ylabel="Percentage",
-              result_path="plots/networktype/percentage_network_types.png")
+              result_path="plots/networktype/percentage_network_types.svg")
 
     """ SIGNAL STRENGTH """
     # plot the average RSSI value in each grid cell
@@ -426,7 +426,7 @@ def main():
                            title="Average RSSI in Grid Cells",
                            agg_func=calculate_avg_value_per_geometry,
                            label="RSSI [dBm]",
-                           result_path="plots/signal_strength/average_rssi.png")
+                           result_path="plots/signal_strength/average_rssi.svg")
     # plot the average RSRP value in each grid cell
     plot_continuous_values(grids_availability,
                            "Signalstärke (RSRP) [dBm]",
@@ -434,7 +434,7 @@ def main():
                            title="Average RSRP in Grid Cells",
                            agg_func=calculate_avg_value_per_geometry,
                            label="RSRP [dBm]",
-                           result_path="plots/signal_strength/average_rsrp.png")
+                           result_path="plots/signal_strength/average_rsrp.svg")
     # plot the average RSRQ value in each grid cell
     plot_continuous_values(grids_availability,
                            "Signalqualität (RSRQ) [dBm]",
@@ -442,7 +442,7 @@ def main():
                            title="Average RSRQ in Grid Cells",
                            agg_func=calculate_avg_value_per_geometry,
                            label="RSRQ [dBm]",
-                           result_path="plots/signal_quality/average_rsrq.png")
+                           result_path="plots/signal_quality/average_rsrq.svg")
     # plot the average RSSI value per connection type in each grid cell
     plot_continuous_values_per_Type(grids_availability,
                                     'Signalstärke (RSSI) [dBm]',
@@ -451,7 +451,7 @@ def main():
                                     agg_func=calculate_avg_value_per_networktype,
                                     label="RSSI [dBm]",
                                     types=['4G', '5G'],
-                                    result_path="plots/signal_strength/average_rssi_per_type.png")
+                                    result_path="plots/signal_strength/average_rssi_per_type.svg")
     # plot the average RSRP value per connection type in each grid cell
     plot_continuous_values_per_Type(grids_availability,
                                     'Signalstärke (RSRP) [dBm]',
@@ -460,7 +460,7 @@ def main():
                                     agg_func=calculate_avg_value_per_networktype,
                                     label="RSRP [dBm]",
                                     types=['4G', '5G'],
-                                    result_path="plots/signal_strength/average_rsrp_per_type.png")
+                                    result_path="plots/signal_strength/average_rsrp_per_type.svg")
 
     # plot the average RSRQ value per connection type in each grid cell
     plot_continuous_values_per_Type(grids_availability,
@@ -470,7 +470,7 @@ def main():
                                     agg_func=calculate_avg_value_per_networktype,
                                     label="RSRQ [dBm]",
                                     types=['4G', '5G'],
-                                    result_path="plots/signal_quality/average_rsrq_per_type.png")
+                                    result_path="plots/signal_quality/average_rsrq_per_type.svg")
 
     # plot the median RSSI value in each grid cell
     plot_continuous_values(grids_availability,
@@ -479,7 +479,7 @@ def main():
                             title="Median RSSI in Grid Cells",
                             agg_func=calculate_median_value_per_geometry,
                             label="RSSI [dBm]",
-                            result_path="plots/signal_strength/median_rssi.png")
+                            result_path="plots/signal_strength/median_rssi.svg")
     # plot the median RSRP value in each grid cell
     plot_continuous_values(grids_availability,
                             "Signalstärke (RSRP) [dBm]",
@@ -487,7 +487,7 @@ def main():
                             title="Median RSRP in Grid Cells",
                             agg_func=calculate_median_value_per_geometry,
                             label="RSRP [dBm]",
-                            result_path="plots/signal_strength/median_rsrp.png")
+                            result_path="plots/signal_strength/median_rsrp.svg")
     # plot the median RSRQ value in each grid cell
     plot_continuous_values(grids_availability,
                             "Signalqualität (RSRQ) [dBm]",
@@ -495,7 +495,7 @@ def main():
                             title="Median RSRQ in Grid Cells",
                             agg_func=calculate_median_value_per_geometry,
                             label="RSRQ [dBm]",
-                            result_path="plots/signal_quality/median_rsrq.png")
+                            result_path="plots/signal_quality/median_rsrq.svg")
 
 
     """LATENCY"""
@@ -508,7 +508,7 @@ def main():
                            agg_func=calculate_avg_value_per_geometry_multiple_columns,
                            label="Latency [ms]",
                            log_scale=True,
-                           result_path="plots/latency/average_latency.png")
+                           result_path="plots/latency/average_latency.svg")
     # plot the median latency to all pings in each grid cell
     plot_continuous_values(grids_latency,
                            'median',
@@ -518,7 +518,7 @@ def main():
                            agg_func=calculate_median_value_per_geometry_multiple_columns,
                            label="Latency [ms]",
                            log_scale=True,
-                           result_path="plots/latency/median_latency.png")
+                           result_path="plots/latency/median_latency.svg")
     # plot the percentage of empty pings in each grid cell
     plot_continuous_values(grids_latency,
                            'percentage_empty',
@@ -527,14 +527,14 @@ def main():
                            title="Percentage of Empty Pings in Grid Cells",
                            agg_func=percentage_of_empty_per_geometry,
                            label="Percentage of Empty Pings",
-                           result_path="plots/latency/percentage_empty_pings.png")
+                           result_path="plots/latency/percentage_empty_pings.svg")
     # plot the average latency per ping in a bar chart
     plot_avg_latency_per_ping_bar(grids_latency,
                                   PINGS,
                                   title="Average Latency per Ping",
                                   xlabel="Provider",
                                   ylabel="Average Latency [ms]",
-                                  result_path="plots/latency/average_latency_per_ping.png")
+                                  result_path="plots/latency/average_latency_per_ping.svg")
 
     """ NETWORK PROVIDER """
     # plot the provider
@@ -544,7 +544,7 @@ def main():
                             title="Network Provider",
                             agg_func=calculate_all_per_geometry,
                             one_legend=False,
-                            result_path="plots/network_provider/network_provider.png")
+                            result_path="plots/network_provider/network_provider.svg")
 
 if __name__ == "__main__":
     main()
