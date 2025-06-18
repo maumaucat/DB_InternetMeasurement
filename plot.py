@@ -434,7 +434,9 @@ def main():
     for operator, grid in grids_availability.items():
         save_tower_info(grid, f"{operator}_cell_towers.csv")
 
-
+    # Ensure plt.savefig does not throw errors for not existing parent folders by creating them
+    for dir in ["numdatapoints", "networktype", "signal_strength", "signal_quality", "network_provider", "latency"]:
+        Path(f"plots/{dir}").mkdir(parents=True, exist_ok=True)
 
     """ NUMBER OF DATA POINTS """
     # Plot the number of data points in each grid cell
@@ -595,12 +597,12 @@ def main():
     #                               ylabel="Average Latency [ms]",
     #                               result_path="plots/latency/average_latency_per_ping.svg")
     # plot the average latency per ping in a bar chart
-    plot_latency_per_ping_box(grids_latency,
-                                  PINGS,
-                                  title="Latency per Ping",
-                                  xlabel="Address",
-                                  ylabel="Latency [ms]",
-                                  result_path="plots/latency/latency_per_ping_box.svg")
+    # plot_latency_per_ping_box(grids_latency,
+    #                               PINGS,
+    #                               title="Latency per Ping",
+    #                               xlabel="Address",
+    #                               ylabel="Latency [ms]",
+    #                               result_path="plots/latency/latency_per_ping_box.svg")
 
     """ NETWORK PROVIDER """
     # plot the provider
