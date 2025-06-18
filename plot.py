@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import math
 from pathlib import Path
 
@@ -358,9 +359,36 @@ def plot_latency_per_ping_box(grids,
         yticks = np.floor(np.concat((np.linspace(0, 400, 11), np.logspace(np.log10(500), np.log10(1000), 5))))
         axs[i].set_yticks(yticks, labels=[f"{t:.0f}" for t in yticks])
         axs[i].tick_params(labelrotation=20)
+    fig.set_suptitle(title)
 
     plt.xticks(rotation=20)
     axs[0].set_ylabel(ylabel)
+
+    if result_path:
+        plt.savefig(result_path, dpi=500)
+    if plot:
+        plt.show()
+    plt.close()
+
+def plot_boxes(network_availability,
+              column,
+              result_path=None,
+              ylabel="",
+              title="",
+              plot=PLOT):
+    """Plot column values in a box chart for each operator."""
+    operators = network_availability.keys()
+    fig, ax = plt.subplots(figsize=(12, 7))
+    # List of columns, 1 per operator
+    data = []
+    for op in operators:
+        op_data = network_availability[op][column]
+        # Drop NaN and '-' Values from column
+        col = op_data[op_data != "-"].dropna().astype(int)
+        data.append(col)
+    ax.boxplot(data, tick_labels=operators) #, flierprops={"marker": ".", "markersize": 1, "markeredgecolor": "xkcd:light gray"})
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
 
     if result_path:
         plt.savefig(result_path, dpi=500)
@@ -533,6 +561,9 @@ def main():
         grid = create_grid(gdf=gdf, cell_size_degree=0.01, overlap=True, crs=gdf.crs, bounds=bounds)
         grids_latency[operator] = grid
 
+    # Ensure plt.savefig does not throw errors for not existing parent folders by creating them
+    for dir in ["numdatapoints", "networktype", "signal_strength", "signal_quality", "network_provider", "latency"]:
+        Path(f"plots/{dir}").mkdir(parents=True, exist_ok=True)
 
     """ "TOWERS" """
     # plot towers
@@ -714,14 +745,14 @@ def main():
     #                               ylabel="Average Latency [ms]",
     #                               result_path="plots/latency/average_latency_per_ping.svg")
     # plot the average latency per ping in a bar chart
-    plot_latency_per_ping_box(grids_latency,
-                                  PINGS,
-                                  title="Latency per Ping",
-                                  xlabel="Address",
-                                  ylabel="Latency [ms]",
-                                  result_path="plots/latency/latency_per_ping_box.svg")
+    # plot_latency_per_ping_box(grids_latency,
+    #                               PINGS,
+    #                               title="Latency per Ping",
+    #                               xlabel="Address",
+    #                               ylabel="Latency [ms]",
+    #                               result_path="plots/latency/latency_per_ping_box.svg")
 
-    """ "NETWORK PROVIDER" """
+    """ NETWORK PROVIDER """
     # plot the provider
     plot_categorical_values(grids_availability,
                             bounds,
@@ -730,6 +761,18 @@ def main():
                             agg_func=calculate_all_per_geometry,
                             one_legend=False,
                             result_path="plots/network_provider/network_provider.svg")
+
+    signal_boxplots = {
+        "RSSI": ("Signalstärke (RSSI) [dBm]", "plots/signal_strength/boxplot_RSSI.svg"),
+        "RSRP": ("Signalstärke (RSRP) [dBm]", "plots/signal_strength/boxplot_RSRP.svg"),
+        "RSRQ": ("Signalqualität (RSRQ) [dBm]", "plots/signal_quality/boxplot_RSRQ.svg")
+    }
+    for name, (col, result_path) in signal_boxplots.items():
+        plot_boxes(grids_availability,
+                   column=col,
+                   title=name,
+                   result_path=result_path,
+                   ylabel="dBm")
 
 
 if __name__ == "__main__":
