@@ -575,7 +575,7 @@ def main():
                 title="Towers in Grid Cells",
                 plot=PLOT,
                 )
-    """
+
     # plot tower connection lines
     plot_tower_connection_lines(grids_availability,
                                 network_availability,
@@ -584,7 +584,7 @@ def main():
                                 result_path="plots/towers/tower_connection_lines.svg",
                                 title="Tower Connection Lines in Grid Cells",
                                 plot=PLOT)
-    """
+
 
     """ "NUMBER OF DATA POINTS" """
     # Plot the number of data points in each grid cell
@@ -738,19 +738,19 @@ def main():
                            label="Percentage of Empty Pings",
                            result_path="plots/latency/percentage_empty_pings.svg")
     # plot the average latency per ping in a bar chart
-    # plot_avg_latency_per_ping_bar(grids_latency,
-    #                               PINGS,
-    #                               title="Average Latency per Ping",
-    #                               xlabel="Address",
-    #                               ylabel="Average Latency [ms]",
-    #                               result_path="plots/latency/average_latency_per_ping.svg")
+    plot_avg_latency_per_ping_bar(grids_latency,
+                                   PINGS,
+                                   title="Average Latency per Ping",
+                                   xlabel="Address",
+                                   ylabel="Average Latency [ms]",
+                                   result_path="plots/latency/average_latency_per_ping.svg")
     # plot the average latency per ping in a bar chart
-    # plot_latency_per_ping_box(grids_latency,
-    #                               PINGS,
-    #                               title="Latency per Ping",
-    #                               xlabel="Address",
-    #                               ylabel="Latency [ms]",
-    #                               result_path="plots/latency/latency_per_ping_box.svg")
+    plot_latency_per_ping_box(grids_latency,
+                                   PINGS,
+                                   title="Latency per Ping",
+                                   xlabel="Address",
+                                   ylabel="Latency [ms]",
+                                   result_path="plots/latency/latency_per_ping_box.svg")
 
     """ NETWORK PROVIDER """
     # plot the provider
