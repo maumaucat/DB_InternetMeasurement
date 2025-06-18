@@ -9,6 +9,7 @@ import matplotlib.colors as mcolors
 from matplotlib.colors import BoundaryNorm
 
 from Aggregation import *
+from towerloader import save_tower_info
 
 PLOT = True
 DATAROOT = Path('data')
@@ -388,6 +389,10 @@ def main():
     for operator, gdf in network_latency.items():
         grid = create_grid(gdf=gdf, cell_size_degree=0.01, overlap=True, crs=gdf.crs, bounds=bounds)
         grids_latency[operator] = grid
+
+    for operator, grid in grids_availability.items():
+        save_tower_info(grid, f"{operator}_cell_towers.csv")
+
 
 
     """ NUMBER OF DATA POINTS """
