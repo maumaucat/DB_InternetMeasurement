@@ -11,7 +11,6 @@ from leafmap.colormaps import cmap_name
 from matplotlib.colors import BoundaryNorm
 
 from Aggregation import *
-from towerloader import save_tower_info
 
 PLOT = True
 DATAROOT = Path('data')
@@ -562,7 +561,7 @@ def main():
         grids_latency[operator] = grid
 
     # Ensure plt.savefig does not throw errors for not existing parent folders by creating them
-    for dir in ["numdatapoints", "networktype", "signal_strength", "signal_quality", "network_provider", "latency"]:
+    for dir in ["numdatapoints", "networktype", "signal_strength", "signal_quality", "network_provider", "latency", "towers"]:
         Path(f"plots/{dir}").mkdir(parents=True, exist_ok=True)
 
     """ "TOWERS" """
