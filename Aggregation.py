@@ -2,6 +2,8 @@ from collections import Counter
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+from shapely.geometry import Point
+from shapely.geometry.linestring import LineString
 
 NETWORKTYPES = ['kein Netz', '2G', '3G', '4G', '5G']
 NETWORKTYPES_TRANS = ['no network', '2G', '3G', '4G', '5G']
@@ -172,3 +174,95 @@ def calculate_average_latency_overall(grid, columns):
         f.write(f'Average Latency: \n{avg_latency}\n')
 
     return avg_latency
+
+def calculate_tower_position(grid, operator, full_data):
+    required_cols = ['Cell-ID', 'Cell-LAC/TAC', 'Netzwerk Mobile Country Code', 'Netzwerk Mobile Network Code']
+    if not all(col in grid.columns for col in required_cols):
+        raise ValueError("Required columns for tower position calculation are missing.")
+
+    towers = pd.read_csv(f'./opencell_data/{operator}_cell_towers.csv')
+
+    if 'Lon' not in towers.columns or 'Lat' not in towers.columns:
+        raise ValueError("CSV must contain 'Lon' and 'Lat' columns.")
+
+    # Merge
+    merged = grid.merge(towers, on=required_cols, how='left')
+
+    # Towers found
+    found = merged.dropna(subset=['Lon', 'Lat']).copy()
+    found['tower_key'] = (
+            found['Cell-ID'].astype(str) + "_" +
+            found['Cell-LAC/TAC'].astype(str) + "_" +
+            found['Netzwerk Mobile Country Code'].astype(str) + "_" +
+            found['Netzwerk Mobile Network Code'].astype(str)
+    )
+
+    towers_found = gpd.GeoDataFrame(found,
+                                    geometry=gpd.points_from_xy(found['Lon'], found['Lat']),
+                                    crs='EPSG:4326')
+
+
+    # Tower not found
+    missing = merged[merged['Lon'].isna() | merged['Lat'].isna()].copy()
+
+    missing['tower_key'] = (
+            missing['Cell-ID'].astype(str) + "_" +
+            missing['Cell-LAC/TAC'].astype(str) + "_" +
+            missing['Netzwerk Mobile Country Code'].astype(str) + "_" +
+            missing['Netzwerk Mobile Network Code'].astype(str)
+    )
+
+    full_data['tower_key'] = (
+            full_data['Cell-ID'].astype(str) + "_" +
+            full_data['Cell-LAC/TAC'].astype(str) + "_" +
+            full_data['Netzwerk Mobile Country Code'].astype(str) + "_" +
+            full_data['Netzwerk Mobile Network Code'].astype(str)
+    )
+
+    relevant_points = full_data[full_data['tower_key'].isin(missing['tower_key'])].copy()
+    approx_positions = (
+        relevant_points
+        .groupby('tower_key')
+        .apply(lambda x: x.unary_union.centroid)
+        .reset_index(name='geometry')
+    )
+
+    approx_positions = gpd.GeoDataFrame(approx_positions, geometry='geometry', crs=full_data.crs)
+    return towers_found, approx_positions
+
+def create_tower_connection_lines(data_points, tower_positions, crs='EPSG:4326'):
+    """
+    Erstellt Verbindungslinien zwischen Datenpunkten und ihren zugehörigen Türmen.
+
+    Parameter:
+    - data_points: GeoDataFrame mit Spalten ['geometry', 'tower_key']
+    - tower_positions: GeoDataFrame mit Spalten ['tower_key', 'geometry']
+    - crs: Koordinatensystem für die Rückgabe (Standard: 'EPSG:4326')
+
+    Rückgabe:
+    - GeoDataFrame mit Linien-Geometrien und Distanzspalte
+    """
+
+    data_points['tower_key'] = (
+        data_points['Cell-ID'].astype(str) + "_" +
+        data_points['Cell-LAC/TAC'].astype(str) + "_" +
+        data_points['Netzwerk Mobile Country Code'].astype(str) + "_" +
+        data_points['Netzwerk Mobile Network Code'].astype(str)
+    )
+
+    # Sicherstellen, dass Geometrien korrekt benannt sind
+    gdf_points = data_points[['tower_key', 'geometry']].rename(columns={'geometry': 'geometry_point'})
+    gdf_towers = tower_positions[['tower_key', 'geometry']].rename(columns={'geometry': 'geometry_tower'})
+
+    # Mergen
+    merged = gdf_points.merge(gdf_towers, on='tower_key', how='inner')
+
+    # Linien und Distanz berechnen
+    merged['line'] = merged.apply(
+        lambda row: LineString([row['geometry_point'], row['geometry_tower']]),
+        axis=1
+    )
+    merged['distance'] = merged['geometry_point'].distance(merged['geometry_tower'])
+
+    # Rückgabe als GeoDataFrame
+    return gpd.GeoDataFrame(merged, geometry='line', crs=crs)

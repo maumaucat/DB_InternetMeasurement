@@ -1,4 +1,4 @@
-Cell-ID,LAC/TAC,MCC,MNC,Lat,Lon,Accuracy,Address
+Cell-ID,Cell-LAC/TAC,Netzwerk Mobile Country Code,Netzwerk Mobile Network Code,Lat,Lon,Accuracy,Address
 26758175,22407,204,4,52.26194,6.79594,889,
 26758145,22407,204,4,52.265199,6.805069,2669,
 26758155,22407,204,4,52.263365,6.796922,1314,

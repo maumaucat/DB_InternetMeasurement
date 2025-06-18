@@ -6,6 +6,7 @@ import shapely
 import matplotlib.patches as mpatches
 import contextily as cx
 import matplotlib.colors as mcolors
+from leafmap.colormaps import cmap_name
 from matplotlib.colors import BoundaryNorm
 
 from Aggregation import *
@@ -367,6 +368,108 @@ def plot_latency_per_ping_box(grids,
         plt.show()
     plt.close()
 
+def plot_tower_connection_lines(grids,
+                                network_availability,
+                                bounds,
+                                map_source=cx.providers.OpenStreetMap.Mapnik,
+                                result_path=None,
+                                title="",
+                                plot=PLOT):
+    """Plot tower connection lines in a grid cell of a GeoDataFrame."""
+    fig, axes = plt.subplots(len(grids), 1, figsize=(16, len(grids) * 6), sharex=True)
+    fig.suptitle(title, fontsize=20)
+    for i, (operator, grid) in enumerate(grids.items()):
+        towers, approximated_towers = calculate_tower_position(grid, operator, network_availability[operator])
+        lines = create_tower_connection_lines(network_availability[operator], towers)
+        if towers.empty:
+            print(f"No towers found for operator {operator}.")
+            continue
+        # Plot the grid cells
+        grid.plot(ax=axes[i], color='lightgrey', edgecolor='black', alpha=0.5, label='Grid Cells')
+        lines.plot(column='distance', cmap='viridis', ax=axes[i], legend=True, linewidth=1)
+        approximated_towers.plot(ax=axes[i], marker='x', color='blue', markersize=5, label='Approximated Towers')
+        towers.plot(ax=axes[i], marker='o', color='red', markersize=5, label='Towers')
+
+        axes[i].set_title(f"{operator}", fontsize=20)
+        axes[i].set_ylim(bounds[1] - 0.03, bounds[3] + 0.03)  # Set y-limits to the bounds
+        axes[i].set_xlim(bounds[0] - 0.03, bounds[2] + 0.03)
+        axes[i].set_axis_off()
+        cx.add_basemap(axes[i], crs=towers.crs, source=map_source)
+        axes[i].legend(loc='upper right', fontsize=12)
+
+    # Show the plot
+    if result_path:
+        plt.savefig(result_path, dpi=500, bbox_inches='tight')
+    if plot:
+        plt.show()
+
+
+
+def plot_towers(grids,
+                network_availability,
+                bounds,
+                map_source=cx.providers.OpenStreetMap.Mapnik,
+                result_path=None,
+                title="",
+                plot=PLOT):
+    """Plot towers in a grid cell of a GeoDataFrame."""
+    fig, axes = plt.subplots(len(grids), 1, figsize=(16, len(grids) * 6), sharex=True)
+    fig.suptitle(title, fontsize=20)
+    for i, (operator, grid) in enumerate(grids.items()):
+        towers, approximated_towers = calculate_tower_position(grid, operator, network_availability[operator])
+        if towers.empty:
+            print(f"No towers found for operator {operator}.")
+            continue
+        # Plot the grid cells
+        grid.plot(ax=axes[i], color='lightgrey', edgecolor='black', alpha=0.5, label='Grid Cells')
+        approximated_towers.plot(ax=axes[i], marker='x', color='blue', markersize=5, label='Approximated Towers')
+        towers.plot(ax=axes[i], marker='o', color='red', markersize=5, label='Towers')
+
+        axes[i].set_title(f"{operator}", fontsize=20)
+        axes[i].set_ylim(bounds[1] - 0.03, bounds[3] + 0.03)  # Set y-limits to the bounds
+        axes[i].set_xlim(bounds[0] - 0.03, bounds[2] + 0.03)
+        axes[i].set_axis_off()
+        cx.add_basemap(axes[i], crs=towers.crs, source=map_source)
+        axes[i].legend(loc='upper right', fontsize=12)
+
+    # Show the plot
+    if result_path:
+        plt.savefig(result_path, dpi=500, bbox_inches='tight')
+    if plot:
+        plt.show()
+
+    fig, axes = plt.subplots(len(grids), 1, figsize=(16, len(grids) * 6), sharex=True)
+    fig.suptitle(title, fontsize=20)
+    for i, (operator, grid) in enumerate(grids.items()):
+        print("Processing operator:", operator)
+        towers, approximated_towers = calculate_tower_position(grid, operator, network_availability[operator])
+        lines = create_tower_connection_lines(network_availability[operator], towers)
+        print(lines.head())
+        if towers.empty:
+            print(f"No towers found for operator {operator}.")
+            continue
+        # Plot the grid cells
+        grid.plot(ax=axes[i], color='lightgrey', edgecolor='black', alpha=0.5, label='Grid Cells')
+        lines.plot(column='distance', cmap='viridis', ax=axes[i], legend=True, linewidth=1)
+        print("Plotting towers for operator:", operator)
+        approximated_towers.plot(ax=axes[i], marker='x', color='blue', markersize=5, label='Approximated Towers')
+        towers.plot(ax=axes[i], marker='o', color='red', markersize=5, label='Towers')
+
+        axes[i].set_title(f"{operator}", fontsize=20)
+        axes[i].set_ylim(bounds[1]-0.03, bounds[3]+0.03)  # Set y-limits to the bounds
+        axes[i].set_xlim(bounds[0]-0.03, bounds[2]+0.03)
+        axes[i].set_axis_off()
+        cx.add_basemap(axes[i], crs=towers.crs, source=map_source)
+        axes[i].legend(loc='upper right', fontsize=12)
+
+
+    # Show the plot
+    if result_path:
+        plt.savefig(result_path, dpi=500, bbox_inches='tight')
+    if plot:
+        plt.show()
+
+
 def load_network_availability_data():
     """Load network availability data from a CSV file."""
     network_availability = {}
@@ -430,12 +533,29 @@ def main():
         grid = create_grid(gdf=gdf, cell_size_degree=0.01, overlap=True, crs=gdf.crs, bounds=bounds)
         grids_latency[operator] = grid
 
-    for operator, grid in grids_availability.items():
-        save_tower_info(grid, f"{operator}_cell_towers.csv")
 
+    """ "TOWERS" """
+    # plot towers
+    plot_towers(grids_availability,
+                network_availability,
+                bounds,
+                map_source=cx.providers.OpenStreetMap.Mapnik,
+                result_path="plots/towers/towers.svg",
+                title="Towers in Grid Cells",
+                plot=PLOT,
+                )
+    """
+    # plot tower connection lines
+    plot_tower_connection_lines(grids_availability,
+                                network_availability,
+                                bounds,
+                                map_source=cx.providers.OpenStreetMap.Mapnik,
+                                result_path="plots/towers/tower_connection_lines.svg",
+                                title="Tower Connection Lines in Grid Cells",
+                                plot=PLOT)
+    """
 
-
-    """ NUMBER OF DATA POINTS """
+    """ "NUMBER OF DATA POINTS" """
     # Plot the number of data points in each grid cell
     plot_continuous_values(grids_availability,
                            "Messpunkt",
@@ -451,7 +571,7 @@ def main():
                            agg_func=count_rows_per_geometry,
                            result_path="plots/numdatapoints/latency_data_points.svg",
                            scale_space=[0, 5, 10, 20, 30, 50, 100, 150, 200, 250])
-    """ NETWORK TYPES """
+    """ "NETWORK TYPES" """
     # Plot the most common network availability value in each grid cell
     plot_categorical_values(grids_availability,
                             bounds,
@@ -476,7 +596,7 @@ def main():
               ylabel="Percentage",
               result_path="plots/networktype/percentage_network_types.svg")
 
-    """ SIGNAL STRENGTH """
+    """ "SIGNAL STRENGTH" """
     # plot the average RSSI value in each grid cell
     plot_continuous_values(grids_availability,
                            "Signalstärke (RSSI) [dBm]",
@@ -556,7 +676,7 @@ def main():
                             result_path="plots/signal_quality/median_rsrq.svg")
 
 
-    """LATENCY"""
+    """"LATENCY"""""
     # plot the average latency to all pings in each grid cell
     plot_continuous_values(grids_latency,
                            'mean',
@@ -601,7 +721,7 @@ def main():
                                   ylabel="Latency [ms]",
                                   result_path="plots/latency/latency_per_ping_box.svg")
 
-    """ NETWORK PROVIDER """
+    """ "NETWORK PROVIDER" """
     # plot the provider
     plot_categorical_values(grids_availability,
                             bounds,
@@ -610,6 +730,7 @@ def main():
                             agg_func=calculate_all_per_geometry,
                             one_legend=False,
                             result_path="plots/network_provider/network_provider.svg")
+
 
 if __name__ == "__main__":
     main()
