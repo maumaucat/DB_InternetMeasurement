@@ -1,29 +1,36 @@
-### Plots - Datenanalyse (Maps)
+# Evaluating Mobile Connectivity Across Providers in Train Environments
 
-- [x] Anzahl der Datenpunkte (Latenz / Verfügbarkeit)
-- [x] Häufigster Verbindungstyp
-- [x] Schlechtester Verbindungstyp
-- [x] Durchschnittliche RSSI
-- [x] Median RSSI
-- [x] Durchschnittliche RSRP
-- [x] Median RSRP
-- [x] Durchschnittliche RSRQ
-- [x] Median RSRQ
+## Scripts
 
-- [x] Vergleich Signalstärke pro Verbindungstyp
+- **`netzlog.sh`**  
+  Bash script to measure round-trip times (RTT) using `ping`, triggered based on GPS accuracy and train movement speed.
 
-- [x] Durchschnittliche Latenz (alle pings)
-- [x] Median Latenz (alle pings)
+- **`plot.py`**  
+  Python script for visualizing different types of data collected by the Breitbandmessung app and the Bash script.
 
-- [ ] Durchschnittliche Latenz (nach Verbindungstyp) 
-- [ ] Median Latenz (nach Verbindungstyp)  
-- Geht nicht, weil wir für einen Datenpunkt von einer Latenz keine Verbindungstypen haben (einzige Möglichkeit matchen mit der Verbindungstabelle über Zeitstempel)
+- **`aggregate.py`**  
+  Utility functions for flexible aggregation of collected data points.
 
-- [x] Prozententualer Verbindungsausfall bei den Pings
+---
 
-- [x] Anbieter 
+## Data Collection
 
-- [ ] Towers? -> Schwer API Key, begrenzt, teuer Was wollen wir dann darstellen überhaupt?
+Measurements were conducted along the following train routes:
 
-### Plots - Datenanalyse (Bar Charts)
-- [x] Prozentuale Verteilung der Verbindungstypen
+- **Osnabrück – Münster**  
+- **Münster – Enschede**  
+- **Hengelo – Bielefeld**
+
+### Data Sources
+
+- **[Breitbandmessung](https://breitbandmessung.de/)** app  
+  Official German broadband measurement application for mobile and stationary networks.
+
+- **`netzlog.sh`**  
+  Custom logging script used for measuring network latency in real-time train environments.
+
+---
+
+## Further Information
+
+For more details on methodology, evaluation, and results, please refer to the [report](./).
